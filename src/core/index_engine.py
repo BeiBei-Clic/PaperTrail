@@ -127,7 +127,7 @@ class IndexEngine:
             page_end=node_data.get("page_end"),
             content=node_data.get("content"),
             token_count=node_data.get("token_count"),
-            metadata=json.dumps(node_data.get("metadata", {})),
+            node_metadata=json.dumps(node_data.get("metadata", {})),
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow(),
         )

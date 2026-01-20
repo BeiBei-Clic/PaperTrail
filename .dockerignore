@@ -1,0 +1,57 @@
+# Python 缓存
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# 虚拟环境
+.venv/
+venv/
+ENV/
+env/
+
+# 数据文件
+data/
+documents/
+knowledge_base/
+
+# 日志文件
+logs/
+*.log
+
+# 环境变量
+.env
+.env.local
+.env.*.local
+
+# IDE 配置
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# 文档和示例
+docs/
+tutorials/
+cookbook/
+*.md
+!README.md
+
+# 测试
+tests/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# 其他
+.DS_Store
+Thumbs.db
+*.bak
+nul

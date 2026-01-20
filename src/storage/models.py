@@ -69,7 +69,7 @@ class PageIndex(Base):
     token_count = Column(Integer)
 
     # 元数据
-    metadata = Column(Text)  # JSON 格式的额外信息
+    node_metadata = Column(Text)  # JSON 格式的额外信息
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 

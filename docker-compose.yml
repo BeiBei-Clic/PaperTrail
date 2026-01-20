@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: pageindex-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: pageindex_kb
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pageindex-network
+    restart: unless-stopped
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pageindex-app
+    environment:
+      # DeepSeek API 配置
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
+      DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-deepseek-chat}
+      DEEPSEEK_BASE_URL: ${DEEPSEEK_BASE_URL:-https://api.deepseek.com/v1}
+
+      # 数据库配置
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/pageindex_kb
+
+      # 文件存储
+      STORAGE_PATH: /app/data/documents
+
+      # PageIndex 配置
+      TOC_CHECK_PAGE_NUM: ${TOC_CHECK_PAGE_NUM:-20}
+      MAX_PAGE_NUM_EACH_NODE: ${MAX_PAGE_NUM_EACH_NODE:-10}
+      MAX_TOKEN_NUM_EACH_NODE: ${MAX_TOKEN_NUM_EACH_NODE:-20000}
+      IF_ADD_NODE_ID: ${IF_ADD_NODE_ID:-yes}
+      IF_ADD_NODE_SUMMARY: ${IF_ADD_NODE_SUMMARY:-yes}
+      IF_ADD_DOC_DESCRIPTION: ${IF_ADD_DOC_DESCRIPTION:-yes}
+      IF_ADD_NODE_TEXT: ${IF_ADD_NODE_TEXT:-no}
+
+      # 检索配置
+      DEFAULT_TOP_K: ${DEFAULT_TOP_K:-5}
+      MAX_CONTEXT_TOKENS: ${MAX_CONTEXT_TOKENS:-16000}
+      SEARCH_TEMPERATURE: ${SEARCH_TEMPERATURE:-0.3}
+
+      # LLM 参数
+      LLM_TEMPERATURE: ${LLM_TEMPERATURE:-0.0}
+      MAX_TOKENS: ${MAX_TOKENS:-4096}
+      REQUEST_TIMEOUT: ${REQUEST_TIMEOUT:-120}
+
+      # 日志配置
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      LOG_FILE: /app/logs/knowledge_base.log
+    ports:
+      - "8000:8000"
+    volumes:
+      - documents_data:/app/data/documents
+      - logs_data:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - pageindex-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  documents_data:
+    driver: local
+  logs_data:
+    driver: local
+
+networks:
+  pageindex-network:
+    driver: bridge
