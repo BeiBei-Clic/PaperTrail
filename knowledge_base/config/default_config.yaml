@@ -1,0 +1,18 @@
+# Default configuration for PageIndex Knowledge Base
+# This file is used as a template for PageIndex integration
+
+# OpenAI Model Configuration
+model: "gpt-4o-2024-11-20"
+
+# Table of Contents Detection
+toc_check_page_num: 20
+
+# Node Size Limits
+max_page_num_each_node: 10
+max_token_num_each_node: 20000
+
+# Content Generation Options
+if_add_node_id: "yes"
+if_add_node_summary: "yes"
+if_add_doc_description: "yes"
+if_add_node_text: "no"
