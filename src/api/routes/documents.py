@@ -2,7 +2,7 @@
 
 from typing import List
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 
 from src.api.schemas import (
     DocumentListResponse,
@@ -30,9 +30,9 @@ def get_document_manager():
 @router.post("/upload", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
 async def upload_document(
     file: UploadFile = File(...),
-    doc_type: str = "auto",
-    title: str = None,
-    description: str = None,
+    doc_type: str = Form("auto"),
+    title: str = Form(None),
+    description: str = Form(None),
 ):
     """
     上传文档
@@ -82,6 +82,8 @@ async def upload_document(
             description=description,
         )
         session.commit()
+        session.refresh(document)
+        session.expunge(document)
 
     return DocumentResponse.model_validate(document)
 
