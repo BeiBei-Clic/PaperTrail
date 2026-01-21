@@ -84,6 +84,25 @@ class PageIndex(Base):
     def __repr__(self):
         return f"<PageIndex(id={self.id}, node_id={self.node_id}, title={self.title})>"
 
+    def to_dict(self) -> dict:
+        """将节点数据转换为字典"""
+        return {
+            "id": self.id,
+            "document_id": self.document_id,
+            "node_id": self.node_id,
+            "parent_id": self.parent_id,
+            "level": self.level,
+            "title": self.title,
+            "summary": self.summary,
+            "page_start": self.page_start,
+            "page_end": self.page_end,
+            "content": self.content,
+            "token_count": self.token_count,
+            "node_metadata": self.node_metadata,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+        }
+
 
 class SearchHistory(Base):
     """搜索历史模型"""

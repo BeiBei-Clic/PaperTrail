@@ -1,5 +1,6 @@
 """树搜索工具"""
 
+import re
 from typing import List, Optional
 
 from sqlalchemy.orm import Session
@@ -33,12 +34,14 @@ class TreeSearchEngine:
             query_builder.filter(
                 (PageIndex.title.like(keyword)) | (PageIndex.summary.like(keyword))
             )
-            .order_by(PageIndex.level)
-            .limit(top_k)
             .all()
         )
 
-        return nodes
+        for node in nodes:
+            node.relevance_score = self._calculate_keyword_relevance(query, node)
+
+        nodes.sort(key=lambda n: (-n.relevance_score, n.level))
+        return nodes[:top_k]
 
     def search_by_llm(
         self, query: str, doc_ids: Optional[List[int]] = None, top_k: int = 5
@@ -70,28 +73,51 @@ class TreeSearchEngine:
 
     def _calculate_relevance(self, query: str, node: PageIndex) -> float:
         """计算查询与节点的相关性分数"""
-        try:
-            prompt = PromptTemplates.get_retrieval_prompt("semantic_search").format(
-                query=query,
-                title=node.title,
-                summary=node.summary or "",
-            )
+        prompt = PromptTemplates.get_retrieval_prompt("semantic_search").format(
+            query=query,
+            title=node.title,
+            summary=node.summary or "",
+        )
 
-            result = self.adapter.call_llm(prompt, temperature=0.1)
+        result = self.adapter.call_llm(self.settings.deepseek_model, prompt, temperature=0.1)
 
-            # 解析分数（假设返回 "分数：8" 或类似格式）
-            import re
+        # 解析分数（假设返回 "分数：8" 或类似格式）
+        match = re.search(r"(\d+(?:\.\d+)?)", result)
+        if match:
+            score = float(match.group(1))
+            return min(score / 10.0, 1.0)  # 归一化到 0-1
 
-            match = re.search(r"(\d+(?:\.\d+)?)", result)
-            if match:
-                score = float(match.group(1))
-                return min(score / 10.0, 1.0)  # 归一化到 0-1
+        return 0.0
 
+    def _calculate_keyword_relevance(self, query: str, node: PageIndex) -> float:
+        query_text = query.strip().lower()
+        if not query_text:
             return 0.0
 
-        except Exception as e:
-            print(f"计算相关性时出错: {e}")
+        title_text = (node.title or "").lower()
+        summary_text = (node.summary or "").lower()
+
+        terms = [term for term in re.split(r"\s+", query_text) if term]
+        max_score = 0.0
+        score = 0.0
+
+        for term in terms:
+            max_score += 3.0
+            if term in title_text:
+                score += 2.0
+            if term in summary_text:
+                score += 1.0
+
+        max_score += 3.0
+        if query_text in title_text:
+            score += 2.0
+        if query_text in summary_text:
+            score += 1.0
+
+        if max_score == 0:
             return 0.0
+
+        return min(score / max_score, 1.0)
 
     def get_node_path(self, node_id: str) -> List[PageIndex]:
         """获取节点路径（从根到当前节点）"""

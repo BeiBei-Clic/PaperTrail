@@ -1,4 +1,4 @@
-"""索引引擎（集成 PageIndex）"""
+﻿"""索引引擎（集成 PageIndex）"""
 
 import asyncio
 import json
@@ -97,7 +97,8 @@ class IndexEngine:
         # 使用 PageIndex 索引 PDF
         from pageindex.page_index import page_index_main
 
-        tree_data = asyncio.run(page_index_main(str(file_path), opt))
+        result = page_index_main(str(file_path), opt)
+        tree_data = asyncio.run(result) if asyncio.iscoroutine(result) else result
         return tree_data
 
     def _index_markdown(self, document: Document) -> dict:
@@ -107,19 +108,18 @@ class IndexEngine:
         # 使用 PageIndex 索引 Markdown
         from pageindex.page_index_md import md_to_tree
 
-        tree_data = asyncio.run(
-            md_to_tree(
-                md_path=str(file_path),
-                if_thinning=False,
-                min_token_threshold=5000,
-                if_add_node_summary=self.settings.if_add_node_summary == "yes",
-                summary_token_threshold=200,
-                model=self.settings.deepseek_model,
-                if_add_doc_description=self.settings.if_add_doc_description == "yes",
-                if_add_node_text=self.settings.if_add_node_text == "yes",
-                if_add_node_id=self.settings.if_add_node_id == "yes",
-            )
+        result = md_to_tree(
+            md_path=str(file_path),
+            if_thinning=False,
+            min_token_threshold=5000,
+            if_add_node_summary=self.settings.if_add_node_summary == "yes",
+            summary_token_threshold=200,
+            model=self.settings.deepseek_model,
+            if_add_doc_description=self.settings.if_add_doc_description == "yes",
+            if_add_node_text=self.settings.if_add_node_text == "yes",
+            if_add_node_id=self.settings.if_add_node_id == "yes",
         )
+        tree_data = asyncio.run(result) if asyncio.iscoroutine(result) else result
         return tree_data
 
     def _save_tree_data(self, doc_id: int, tree_data: dict):
@@ -127,8 +127,17 @@ class IndexEngine:
         # 清除旧索引
         self.session.query(PageIndex).filter(PageIndex.document_id == doc_id).delete()
 
+        # 兼容 PageIndex 返回结构：dict{structure: [...]} / list / node dict
+        if isinstance(tree_data, dict) and "structure" in tree_data:
+            root_nodes = tree_data["structure"] or []
+        elif isinstance(tree_data, list):
+            root_nodes = tree_data
+        else:
+            root_nodes = [tree_data]
+
         # 递归保存节点
-        self._save_node_recursive(doc_id, tree_data, parent_id=None)
+        for node in root_nodes:
+            self._save_node_recursive(doc_id, node, parent_id=None)
 
         self.session.commit()
 
@@ -157,3 +166,4 @@ class IndexEngine:
         children = node_data.get("children", [])
         for child_data in children:
             self._save_node_recursive(doc_id, child_data, parent_id=node.node_id)
+

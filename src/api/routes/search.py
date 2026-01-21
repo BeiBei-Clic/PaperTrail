@@ -57,8 +57,8 @@ def simple_search(request: SearchRequest):
         retrieval_engine = RetrievalEngine(session)
 
         try:
-            # 使用语义搜索
-            result = retrieval_engine.semantic_search(
+            # 使用关键词搜索（不走 LLM）
+            result = retrieval_engine.simple_search(
                 request.query, request.doc_ids, request.top_k
             )
 
