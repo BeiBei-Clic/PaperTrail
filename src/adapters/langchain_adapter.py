@@ -14,19 +14,13 @@ class LangChainPageIndexAdapter:
     def __init__(self):
         self.client = DeepSeekClient()
 
-    def call_llm(self, prompt: str, temperature: float = 0.0) -> str:
+    def call_llm(self, model: str, prompt: str, temperature: float = 0.0, **kwargs) -> str:
         """调用 LLM（同步）"""
         return self.client.invoke(prompt, temperature=temperature)
 
-    def call_llm_async(self, prompt: str, temperature: float = 0.0) -> str:
+    async def call_llm_async(self, model: str, prompt: str, temperature: float = 0.0, **kwargs) -> str:
         """调用 LLM（异步）"""
-        try:
-            loop = asyncio.get_event_loop()
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-
-        return loop.run_until_complete(self.client.ainvoke(prompt, temperature=temperature))
+        return await self.client.ainvoke(prompt, temperature=temperature)
 
     def call_llm_with_json(self, prompt: str, temperature: float = 0.0) -> Dict:
         """调用 LLM 并返回 JSON"""

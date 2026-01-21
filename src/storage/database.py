@@ -23,7 +23,7 @@ def get_engine():
 def get_session_factory():
     """获取会话工厂"""
     engine = get_engine()
-    return sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    return sessionmaker(autocommit=False, autoflush=False, bind=engine, expire_on_commit=False)
 
 
 # 全局会话工厂

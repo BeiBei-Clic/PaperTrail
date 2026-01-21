@@ -62,19 +62,37 @@ class IndexEngine:
         """索引 PDF 文档"""
         file_path = self.document_manager.get_document_file_path(document.id)
 
-        # 创建配置对象
-        from pageindex.page_index import config
+        # 创建配置对象，使用 PageIndex 默认配置并覆盖用户配置
+        from pageindex.utils import ConfigLoader
 
-        opt = config(
-            model=self.settings.deepseek_model,
-            toc_check_page_num=self.settings.toc_check_page_num,
-            max_page_num_each_node=self.settings.max_page_num_each_node,
-            max_token_num_each_node=self.settings.max_token_num_each_node,
-            if_add_node_id=self.settings.if_add_node_id,
-            if_add_node_summary=self.settings.if_add_node_summary,
-            if_add_doc_description=self.settings.if_add_doc_description,
-            if_add_node_text=self.settings.if_add_node_text,
+        toc_check_page_num = (
+            self.settings.toc_check_page_num
+            if self.settings.toc_check_page_num is not None
+            else 20
         )
+        max_page_num_each_node = (
+            self.settings.max_page_num_each_node
+            if self.settings.max_page_num_each_node is not None
+            else 10
+        )
+        max_token_num_each_node = (
+            self.settings.max_token_num_each_node
+            if self.settings.max_token_num_each_node is not None
+            else 20000
+        )
+
+        user_opt = {
+            "model": self.settings.deepseek_model,
+            "toc_check_page_num": int(toc_check_page_num),
+            "max_page_num_each_node": int(max_page_num_each_node),
+            "max_token_num_each_node": int(max_token_num_each_node),
+            "if_add_node_id": self.settings.if_add_node_id,
+            "if_add_node_summary": self.settings.if_add_node_summary,
+            "if_add_doc_description": self.settings.if_add_doc_description,
+            "if_add_node_text": self.settings.if_add_node_text,
+        }
+
+        opt = ConfigLoader().load(user_opt)
 
         # 使用 PageIndex 索引 PDF
         from pageindex.page_index import page_index_main
